@@ -1,0 +1,8 @@
+FROM python:3.11
+COPY requirements.txt requirements.txt
+RUN apt-get update && pip install -r requirements.txt
+COPY shemas.py shemas.py
+COPY main.py main.py
+COPY db_code.py db_code.py
+VOLUME [ "/app" ]
+ENTRYPOINT ["python3", "main.py"]
