@@ -3,12 +3,12 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from os import environ
 from db_code import db_close, db_open
-from shemas import Token, get_response, UserValidation, TextFilter
+from shemas import get_response, UserValidation, TextFilter, OwnerValidation, help_response
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
-tok = Token()
 bot: Bot = Bot(token=environ["TOKEN"])
 dp: Dispatcher = Dispatcher()  # обработчик запросов
 # перечень доступных команд
@@ -19,6 +19,7 @@ commands_lst = ('/start', '/help', '/get', '/add', '/del', '/cancel')
 # /get - выводит списко задач
 # /add - переход в режим регистрации задач
 # /del - переход в режим удаления задач
+# /cancel - переход в режим Idle
 
 
 @dp.message(Command(commands=["start"]))
@@ -43,9 +44,15 @@ async def process_start_command(message: Message):
                          \nДоступные комады:\n{res}')
 
 
+@dp.message(Command(commands=['send_request']), OwnerValidation())
+async def process_send_request_command(message: Message):
+    requests.get(f'http://fa/get_url?id={message.chat.id}')
+    await message.answer('Запрос отправлен')
+
+
 @dp.message(Command(commands=['help']), UserValidation())
 async def process_help_command(message: Message):
-    await message.answer('Я могу хранить твои задачи:)')
+    await message.answer(f'{help_response}')
 
 
 @dp.message(Command(commands=['cancel']), UserValidation())
