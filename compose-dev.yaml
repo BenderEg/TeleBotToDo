@@ -1,0 +1,44 @@
+services:
+    db:
+        container_name: db
+        image: postgres:latest
+        env_file:
+           - .envdev
+        ports:
+          - 5433:5432
+        volumes:
+            - ./db/db_schema.sql:/docker-entrypoint-initdb.d/db.sql:ro
+            - to_do_db:/var/lib/postgresql/data
+        networks:
+            - to_do
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    red:
+        container_name: red
+        image: redis
+        volumes:
+            - to_do_state:/data
+        ports:
+          - 6379:6379
+        networks:
+            - to_do
+        healthcheck:
+            test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+            interval: 1s
+            timeout: 3s
+            retries: 5
+
+volumes:
+    to_do_db:
+        name: to_do_db
+    to_do_state:
+        name: to_do_state
+
+networks:
+    to_do:
+        name: to_do
+        external: True
