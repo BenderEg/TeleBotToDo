@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from datetime import datetime
 from os import environ
 from time import sleep
-from dataclasses import dataclass
+from uuid import UUID
+
 
 import psycopg2
 
@@ -9,7 +11,7 @@ import psycopg2
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.filters import BaseFilter
 from aiogram.filters.state import State, StatesGroup
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
 
@@ -35,6 +37,7 @@ class FSMmodel(StatesGroup):
     add = State()  # Состояние добавления объектов
     delete = State()  # Состояние удаления объектов
     calendar = State()
+    mark_done = State()
 
 
 class Con:
@@ -79,6 +82,12 @@ class TextFilter(BaseFilter):
         return False
 
 
+class CategoryResponse(BaseFilter):
+
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return int(callback.data) >= 0
+
+
 # not implemented
 class OwnerValidation(BaseFilter):
     async def __call__(self, message: Message) -> bool:
@@ -91,6 +100,7 @@ class OwnerValidation(BaseFilter):
 @dataclass
 class Task():
 
-    tasks: list
+    id: UUID
+    task: str
     target_date: datetime
-    status: list
+    task_status: str

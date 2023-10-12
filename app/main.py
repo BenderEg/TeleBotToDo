@@ -3,8 +3,6 @@ from aiogram.types import Message
 
 
 from functions import set_schema
-from shemas import get_response, UserValidation, \
-    TextFilter, OwnerValidation, help_response
 from dotenv import load_dotenv
 import requests
 

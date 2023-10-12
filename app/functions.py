@@ -1,6 +1,7 @@
 from datetime import datetime, UTC
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.fsm.context import FSMContext
 from psycopg2.extras import RealDictCursor
 
 from models import Task, DbConnect
@@ -15,43 +16,37 @@ async def prepare_list_of_task(lst: list, ) -> str:
 
     validated_data = [Task(**ele) for ele in lst]
     res = ''
-    for j, ele in enumerate(validated_data):
-        date = ele.target_date.strftime("%d_%m_%Y")
+    d = {}
+    for ele in validated_data:
+        if ele.target_date not in d:
+            d[ele.target_date] = [(ele.task, ele.task_status)]
+        else:
+            d[ele.target_date].append((ele.task, ele.task_status))
+    for j, ele in enumerate(d.keys()):
+        date = ele.strftime("%d_%m_%Y")
         res += f'<b>{date}:</b>\n\n'
-        for i, val in enumerate(ele.tasks):
-            if ele.status[i] == 'active':
-                s = f"{i+1}. {val}"
+        for i, val in enumerate(d[ele], 1):
+            if val[1] == 'active':
+                s = f"{i}. {val[0]}"
             else:
-                s = f"<strike>{i+1}. {val}</strike>"
-            if i == len(ele.tasks)-1:
-                s += '.\n'
+                s = f"<strike>{i}. {val[0]}</strike>"
+            if i == len(d[ele]):
+                s += '.\n\n'
             else:
                 s += ';\n'
             res += s
-        if j != len(validated_data)-1:
-            res += '\n'
     return res
 
 
-async def get_current_tasks(id: int) -> None | list:
+async def get_tasks(id: int, order: str) -> None | list:
     with DbConnect() as db:
-        db.cur.execute('''SELECT array_agg(task) as tasks, \
-                       target_date, array_agg(task_status) as status
+
+        db.cur.execute('''SELECT id, task,
+                       target_date, task_status
                        FROM task
                        WHERE target_date >= now()::DATE and user_id=%s
-                       GROUP BY target_date
-                       ORDER BY target_date''', (id,))
-        return db.cur.fetchall()
-
-
-async def get_outdated_tasks(id: int) -> None | list:
-    with DbConnect() as db:
-        db.cur.execute('''SELECT array_agg(task) as tasks, \
-                       target_date, array_agg(task_status) as status
-                       FROM task
-                       WHERE target_date < now()::DATE and user_id=%s
-                       GROUP BY target_date
-                       ORDER BY target_date DESC''', (id,))
+                       ORDER BY target_date {order}'''.format(order=order),
+                       (id, ))
         return db.cur.fetchall()
 
 
@@ -80,11 +75,22 @@ async def add_task(id: int, task: str, date: str) -> None:
                        DO NOTHING''', (id, task, date))
 
 
-async def create_tasks_list_for_mark(lst: list):
-    builder = InlineKeyboardBuilder()
+async def create_tasks_list_for_mark(lst: list, state: FSMContext):
     validated_data = [Task(**ele) for ele in lst]
+    tasks_list = []
+    for ele in validated_data:
+        for value in ele.tasks:
+            tasks_list.append([ele.target_date.strftime('%Y_%m_%d'), value])
+    await state.update_data(tasks_list=tasks_list, marked_tasks=[])
+    builder = await create_tasks_builder(tasks_list)
+    return builder
+
+
+async def create_tasks_builder(lst: list) -> InlineKeyboardBuilder:
+
+    builder = InlineKeyboardBuilder()
     for i, ele in enumerate(lst):
-        builder.button(text=ele, callback_data=f"{i}")
-    builder.button(text='Все категории', callback_data=f"{len(lst)}")
-    builder.adjust(3, 1)
+        builder.button(text=f'{ele[0]}: {ele[1]}',
+                       callback_data=f"{i}")
+    builder.adjust(1, 1)
     return builder
