@@ -82,12 +82,6 @@ class TextFilter(BaseFilter):
         return False
 
 
-class CategoryResponse(BaseFilter):
-
-    async def __call__(self, callback: CallbackQuery) -> bool:
-        return int(callback.data) >= 0
-
-
 # not implemented
 class OwnerValidation(BaseFilter):
     async def __call__(self, message: Message) -> bool:

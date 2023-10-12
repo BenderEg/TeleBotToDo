@@ -1,4 +1,5 @@
 from datetime import datetime, UTC
+from typing import Literal
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
@@ -12,17 +13,16 @@ def set_schema(cur: RealDictCursor):
     cur.execute('SET search_path TO content,public')
 
 
-async def prepare_list_of_task(lst: list, ) -> str:
+async def prepare_list_of_task(lst: list[Task]) -> str:
 
-    validated_data = [Task(**ele) for ele in lst]
     res = ''
     d = {}
-    for ele in validated_data:
+    for ele in lst:
         if ele.target_date not in d:
             d[ele.target_date] = [(ele.task, ele.task_status)]
         else:
             d[ele.target_date].append((ele.task, ele.task_status))
-    for j, ele in enumerate(d.keys()):
+    for ele in d.keys():
         date = ele.strftime("%d_%m_%Y")
         res += f'<b>{date}:</b>\n\n'
         for i, val in enumerate(d[ele], 1):
@@ -38,16 +38,25 @@ async def prepare_list_of_task(lst: list, ) -> str:
     return res
 
 
-async def get_tasks(id: int, order: str) -> None | list:
-    with DbConnect() as db:
+async def filter_active_task(lst: list[Task]) -> list:
 
+    return list(filter(lambda x: x.task_status == 'active', lst))
+
+
+async def get_tasks(id: int, status: Literal['outdated', 'current'],
+                    order: str) -> None | list:
+    status = 'target_date >= now()::DATE' if status == 'current' \
+        else 'target_date < now()::DATE'
+    with DbConnect() as db:
         db.cur.execute('''SELECT id, task,
                        target_date, task_status
                        FROM task
-                       WHERE target_date >= now()::DATE and user_id=%s
-                       ORDER BY target_date {order}'''.format(order=order),
+                       WHERE {status} and user_id=%s
+                       ORDER BY target_date {order}'''.format(status=status,
+                                                              order=order),
                        (id, ))
-        return db.cur.fetchall()
+        validated_data = [Task(**ele) for ele in db.cur.fetchall()]
+        return validated_data
 
 
 async def start(id: int, name: str) -> None:
@@ -75,22 +84,32 @@ async def add_task(id: int, task: str, date: str) -> None:
                        DO NOTHING''', (id, task, date))
 
 
-async def create_tasks_list_for_mark(lst: list, state: FSMContext):
-    validated_data = [Task(**ele) for ele in lst]
-    tasks_list = []
-    for ele in validated_data:
-        for value in ele.tasks:
-            tasks_list.append([ele.target_date.strftime('%Y_%m_%d'), value])
-    await state.update_data(tasks_list=tasks_list, marked_tasks=[])
-    builder = await create_tasks_builder(tasks_list)
+async def update_mark_task(id: int, state: FSMContext) -> None:
+    data: dict = await state.get_data()
+    if data and data['marked_tasks']:
+        with DbConnect() as db:
+            db.cur.executemany('''UPDATE task
+                               SET task_status = 'inactive'
+                               WHERE user_id = %s
+                               AND id = %s''', ((id, ele)
+                                                for ele in data[
+                                                    'marked_tasks']))
+    await state.clear()
+
+
+async def create_tasks_list_for_mark(lst: list[Task], state: FSMContext):
+    tasks_dict = {ele.id: [ele.target_date.strftime('%Y_%m_%d'), ele.task]
+                  for ele in lst if ele.task_status == 'active'}
+    await state.update_data(tasks_dict=tasks_dict, marked_tasks=[])
+    builder = await create_tasks_builder(tasks_dict)
     return builder
 
 
-async def create_tasks_builder(lst: list) -> InlineKeyboardBuilder:
+async def create_tasks_builder(d: dict) -> InlineKeyboardBuilder:
 
     builder = InlineKeyboardBuilder()
-    for i, ele in enumerate(lst):
-        builder.button(text=f'{ele[0]}: {ele[1]}',
-                       callback_data=f"{i}")
+    for key, value in d.items():
+        builder.button(text=f'{value[0]}: {value[1]}',
+                       callback_data=f"{key}")
     builder.adjust(1, 1)
     return builder

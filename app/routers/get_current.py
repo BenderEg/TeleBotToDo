@@ -14,7 +14,7 @@ router: Router = Router()
                                                                FSMmodel.add))
 async def process_get_current_command(message: Message):
     id = message.from_user.id
-    tasks = await get_tasks(id, 'ASC')
+    tasks = await get_tasks(id, 'current', 'ASC')
     if not tasks:
         await message.answer('На данный момент список актуальных задач пуст.')
     else:

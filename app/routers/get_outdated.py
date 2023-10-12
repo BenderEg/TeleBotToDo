@@ -14,7 +14,7 @@ router: Router = Router()
                 StateFilter(default_state, FSMmodel.add))
 async def process_get_outdated_command(message: Message):
     id = message.from_user.id
-    tasks = await get_tasks(id, 'DESC')
+    tasks = await get_tasks(id, 'outdated', 'DESC')
     if not tasks:
         await message.answer(
             'Cписок просроченных задач за прошедшую неделю пуст.')
