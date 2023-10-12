@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime, UTC, date
 from typing import Literal
 
 from aiogram import Bot
@@ -73,17 +73,31 @@ async def filter_inactive_task(lst: list[Task]) -> list:
     return list(filter(lambda x: x.task_status == 'inactive', lst))
 
 
-async def get_tasks(id: int, status: Literal['outdated', 'current'],
+async def filter_current_task(lst: list[Task]) -> list:
+
+    return list(filter(lambda x: x.target_date >= datetime.now().date(), lst))
+
+
+async def filter_outdated_task(lst: list[Task]) -> list:
+
+    return list(filter(lambda x: x.target_date < datetime.now().date(), lst))
+
+
+async def filter_mark_done_task(lst: list[Task]) -> list:
+
+    return list(filter(
+        lambda x: (x.target_date - datetime.now().date()).days >= -2, lst)
+        )
+
+
+async def get_tasks(id: int,
                     order: str) -> None | list:
-    status = 'target_date >= now()::DATE' if status == 'current' \
-        else 'target_date < now()::DATE'
     with DbConnect() as db:
         db.cur.execute('''SELECT id, task,
                        target_date, task_status
                        FROM task
-                       WHERE {status} and user_id=%s
+                       WHERE user_id=%s
                        ORDER BY target_date {order}'''.format(
-                           status=status,
                            order=order),
                        (id, ))
         validated_data = [Task(**ele) for ele in db.cur.fetchall()]

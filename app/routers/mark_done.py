@@ -5,8 +5,9 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
 
 from functions import get_tasks, create_tasks_list_for_mark, \
-    create_tasks_builder, update_mark_task, filter_active_task
-from models import FSMmodel
+    create_tasks_builder, update_mark_task, filter_active_task, \
+    filter_mark_done_task
+from models import FSMmodel, TextFilter
 
 router: Router = Router()
 
@@ -16,8 +17,9 @@ router: Router = Router()
 async def process_mark_task_command(message: Message,
                                     state: FSMContext):
     id = message.from_user.id
-    all_tasks = await get_tasks(id, 'current', 'ASC')
-    tasks = await filter_active_task(all_tasks)
+    all_tasks = await get_tasks(id, 'ASC')
+    actual_tasks = await filter_mark_done_task(all_tasks)
+    tasks = await filter_active_task(actual_tasks)
     if not tasks:
         await message.answer('На данный момент список актуальных задач пуст.')
     else:
@@ -32,14 +34,31 @@ async def process_mark_task_command(message: Message,
                 Command(commands='cancel'))
 async def process_exit_add_mode_command(message: Message,
                                         state: FSMContext):
-    await message.answer('Вы вышли из режима отметки выполненных задач.')
+    await message.answer('Вы вышли из режима отметки выполненных задач.\n\
+Для добавления задачи нажмите /add.\n\
+Для просмотра актуальных задач нажмите /get_current.')
     await update_mark_task(message.from_user.id, state)
 
 
 @router.message(StateFilter(FSMmodel.mark_done),
-                Command(commands=('add', 'calendar')))
+                Command(commands=('add', 'calendar',
+                                  'get_outdated', 'get_current')))
 async def process_add_command(message: Message):
     await message.answer('Сначала выйдете из режима отметки выполненных задач')
+
+
+@router.message(StateFilter(FSMmodel.mark_done),
+                Command(commands=('mark_done')))
+async def process_repeat_command(message: Message):
+    await message.answer('Выберите задачу из перечня выше \
+или нажмите /cancel для выхода из режима.')
+
+
+@router.message(StateFilter(FSMmodel.mark_done),
+                TextFilter())
+async def process_text_input(message: Message):
+    await message.answer('Выберите задачу из перечня выше \
+или нажмите /cancel для выхода из режима.')
 
 
 @router.callback_query(StateFilter(FSMmodel.mark_done))

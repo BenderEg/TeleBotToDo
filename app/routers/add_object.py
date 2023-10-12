@@ -27,7 +27,8 @@ async def process_add_object_command(message: Message,
                                    mode=StartMode.RESET_STACK)
     else:
         await message.answer(text=f'Вы в режиме ввода задачи.\n\
-Выбранная дата: <b>{date}</b>, введите задачу. Для выхода из режима нажмите /cancel.\n\
+Выбранная дата: <b>{date}</b>, введите задачу. \
+Для выхода из режима нажмите /cancel.\n\
 Для смены даты нажмите /calendar.', parse_mode='html')
 
 
@@ -35,7 +36,9 @@ async def process_add_object_command(message: Message,
                 Command(commands='cancel'))
 async def process_exit_add_mode_command(message: Message,
                                         state: FSMContext):
-    await message.answer('Вы вышли из режима ввода задачи.')
+    await message.answer('Вы вышли из режима ввода задачи.\n\
+Для отметки выполненных задач нажмите /mark_done.\n\
+Для просмотра актуальных задач нажмите /get_current.')
     await state.set_state(state=None)
 
 
