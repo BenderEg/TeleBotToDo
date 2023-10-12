@@ -7,7 +7,6 @@ from uuid import UUID
 
 import psycopg2
 
-
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.filters import BaseFilter
 from aiogram.filters.state import State, StatesGroup
@@ -28,6 +27,10 @@ storage: RedisStorage = RedisStorage(redis=redis,
                                          with_destiny=True))
 
 
+commands = {'/add, /calendar', '/get_outdated',
+            '/get_current', '/help', '/start'}
+
+
 class FSMmodel(StatesGroup):
     # Создаем экземпляры класса State, последовательно
     # перечисляя возможные состояния, в которых будет находиться
@@ -35,7 +38,6 @@ class FSMmodel(StatesGroup):
     get_current = State()  # Состояние тренировки
     get_outdated = State()
     add = State()  # Состояние добавления объектов
-    delete = State()  # Состояние удаления объектов
     calendar = State()
     mark_done = State()
 
@@ -77,7 +79,7 @@ class DbConnect:
 
 class TextFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        if message.text:
+        if message.text and message.text not in commands:
             return {'text': message.text}
         return False
 

@@ -34,7 +34,12 @@ async def process_exit_add_mode_command(message: Message,
                                         state: FSMContext):
     await message.answer('Вы вышли из режима отметки выполненных задач.')
     await update_mark_task(message.from_user.id, state)
-    # await state.set_state(state=None)
+
+
+@router.message(StateFilter(FSMmodel.mark_done),
+                Command(commands=('add', 'calendar')))
+async def process_add_command(message: Message):
+    await message.answer('Сначала выйдете из режима отметки выполненных задач')
 
 
 @router.callback_query(StateFilter(FSMmodel.mark_done))

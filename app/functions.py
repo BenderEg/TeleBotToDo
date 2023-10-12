@@ -1,11 +1,36 @@
 from datetime import datetime, UTC
 from typing import Literal
 
+from aiogram import Bot
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
+from aiogram.types import BotCommand
 from psycopg2.extras import RealDictCursor
 
 from models import Task, DbConnect
+
+
+async def set_main_menu(bot: Bot):
+
+    main_menu_commands = [
+        BotCommand(command='/get_current',
+                   description='Вывод текузщих задач'),
+        BotCommand(command='/get_outdated',
+                   description='Вывод задач за прошедшую неделю'),
+        BotCommand(command='/mark_done',
+                   description='Пометить задачу как выполненную'),
+        BotCommand(command='/add',
+                   description='Добавить задачу'),
+        BotCommand(command='/calendar',
+                   description='Календарь и выбор даты'),
+        BotCommand(command='/help',
+                   description='Справка по работе бота'),
+        BotCommand(command='/cancel',
+                   description='Для выхода из режима'),
+        BotCommand(command='/start',
+                   description='Для старта работы'),
+            ]
+    await bot.set_my_commands(main_menu_commands)
 
 
 def set_schema(cur: RealDictCursor):
@@ -43,6 +68,11 @@ async def filter_active_task(lst: list[Task]) -> list:
     return list(filter(lambda x: x.task_status == 'active', lst))
 
 
+async def filter_inactive_task(lst: list[Task]) -> list:
+
+    return list(filter(lambda x: x.task_status == 'inactive', lst))
+
+
 async def get_tasks(id: int, status: Literal['outdated', 'current'],
                     order: str) -> None | list:
     status = 'target_date >= now()::DATE' if status == 'current' \
@@ -52,8 +82,9 @@ async def get_tasks(id: int, status: Literal['outdated', 'current'],
                        target_date, task_status
                        FROM task
                        WHERE {status} and user_id=%s
-                       ORDER BY target_date {order}'''.format(status=status,
-                                                              order=order),
+                       ORDER BY target_date {order}'''.format(
+                           status=status,
+                           order=order),
                        (id, ))
         validated_data = [Task(**ele) for ele in db.cur.fetchall()]
         return validated_data
@@ -75,7 +106,7 @@ async def start(id: int, name: str) -> None:
 
 
 async def add_task(id: int, task: str, date: str) -> None:
-    date = datetime.strptime(date, '%Y/%m/%d')
+    date = datetime.strptime(date, '%Y_%m_%d')
     with DbConnect() as db:
         db.cur.execute('''INSERT into task
                        (user_id, task, target_date)

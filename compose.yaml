@@ -4,8 +4,6 @@ services:
         image: postgres:latest
         env_file:
            - .env
-        ports:
-          - 5433:5432
         volumes:
             - ./db/db_schema.sql:/docker-entrypoint-initdb.d/db.sql:ro
             - to_do_db:/var/lib/postgresql/data
@@ -16,14 +14,13 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
+        restart: always
 
     red:
         container_name: red
         image: redis
         volumes:
             - to_do_state:/data
-        ports:
-          - 6379:6379
         networks:
             - to_do
         healthcheck:
@@ -31,6 +28,7 @@ services:
             interval: 1s
             timeout: 3s
             retries: 5
+        restart: always
 
     app:
         container_name: to_do_list

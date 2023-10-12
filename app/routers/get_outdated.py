@@ -4,7 +4,7 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message
 
 from functions import prepare_list_of_task, get_tasks
-from models import DbConnect, FSMmodel
+from models import FSMmodel
 
 
 router: Router = Router()
