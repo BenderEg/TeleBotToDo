@@ -4,6 +4,5 @@ __pycache__
 .env
 .vscode
 logs
-fast_api
 pypro*
 .envdev

@@ -27,8 +27,8 @@ storage: RedisStorage = RedisStorage(redis=redis,
                                          with_destiny=True))
 
 
-commands = {'/add, /calendar', '/get_outdated',
-            '/get_current', '/help', '/start'}
+# commands = {'/add, /calendar', '/get_outdated',
+  #          '/get_current', '/help', '/start'}
 
 
 class FSMmodel(StatesGroup):
@@ -79,7 +79,7 @@ class DbConnect:
 
 class TextFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        if message.text and message.text not in commands:
+        if message.text:
             return {'text': message.text}
         return False
 
