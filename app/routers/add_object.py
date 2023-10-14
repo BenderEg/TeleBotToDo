@@ -9,7 +9,6 @@ from functions import add_task
 from models import FSMmodel, TextFilter, redis
 from my_calendar import add_dialog
 
-
 router: Router = Router()
 router.include_router(add_dialog)
 setup_dialogs(router)

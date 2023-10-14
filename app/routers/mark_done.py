@@ -44,7 +44,8 @@ async def process_exit_add_mode_command(message: Message,
                 Command(commands=('add', 'calendar',
                                   'get_outdated', 'get_current')))
 async def process_add_command(message: Message):
-    await message.answer('Сначала выйдете из режима отметки выполненных задач')
+    await message.answer('Сначала выйдете из режима отметки выполненных задач.\n\
+Для выхода нажмите /cancel.')
 
 
 @router.message(StateFilter(FSMmodel.mark_done),

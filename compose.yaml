@@ -43,6 +43,19 @@ services:
             - to_do
         restart: always
 
+    cleaner:
+        container_name: cleaner
+        build:
+            context: cleaner
+        depends_on:
+            - db
+            - red
+        env_file:
+            - .env
+        networks:
+            - to_do
+        restart: always
+
 volumes:
     to_do_db:
         name: to_do_db

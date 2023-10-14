@@ -1,20 +1,23 @@
 from aiogram import Router
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from aiogram_dialog import DialogManager, setup_dialogs, StartMode
+from aiogram_dialog import DialogManager, StartMode
+from aiogram.fsm.state import default_state
+
 
 from my_calendar import calendar_dialog
 
 from models import FSMmodel
-
+from routers.add_object import setup_dialogs
 
 router: Router = Router()
 router.include_router(calendar_dialog)
 setup_dialogs(router)
 
 
-@router.message(Command(commands=["calendar"]))
+@router.message(Command(commands=["calendar"]),
+                StateFilter(default_state, FSMmodel.add))
 async def process_calendar_command(message: Message,
                                    dialog_manager: DialogManager,
                                    state: FSMContext):
