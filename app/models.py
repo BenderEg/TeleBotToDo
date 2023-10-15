@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from os import environ
 from time import sleep
 from uuid import UUID
 
@@ -10,16 +9,14 @@ import psycopg2
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.filters import BaseFilter
 from aiogram.filters.state import State, StatesGroup
-from aiogram.types import Message, CallbackQuery
-from dotenv import load_dotenv
+from aiogram.types import Message
 from psycopg2.extras import RealDictCursor
 
+from settings import settings
 
-load_dotenv('.envdev')
-
-BOT_TOKEN = environ["TOKEN"]
-redis: Redis = Redis(host=environ["REDIS_HOST"],
-                     db=environ['REDIS_DB'],
+BOT_TOKEN = settings.token
+redis: Redis = Redis(host=settings.redis_host,
+                     db=settings.redis_db,
                      encoding="utf-8",
                      decode_responses=True)
 storage: RedisStorage = RedisStorage(redis=redis,
@@ -27,17 +24,10 @@ storage: RedisStorage = RedisStorage(redis=redis,
                                          with_destiny=True))
 
 
-# commands = {'/add, /calendar', '/get_outdated',
-  #          '/get_current', '/help', '/start'}
-
-
 class FSMmodel(StatesGroup):
-    # Создаем экземпляры класса State, последовательно
-    # перечисляя возможные состояния, в которых будет находиться
-    # бот в разные моменты взаимодейтсвия с пользователем
-    get_current = State()  # Состояние тренировки
+    get_current = State()
     get_outdated = State()
-    add = State()  # Состояние добавления объектов
+    add = State()
     calendar = State()
     mark_done = State()
 
@@ -46,11 +36,11 @@ class Con:
 
     def __init__(self) -> None:
 
-        self.con = psycopg2.connect(database=environ["POSTGRES_DB"],
-                                    user=environ["POSTGRES_USER"],
-                                    password=environ["POSTGRES_PASSWORD"],
-                                    host=environ["HOST"],
-                                    port=environ["PORT_DB"],
+        self.con = psycopg2.connect(database=settings.postgres_db,
+                                    user=settings.postgres_user,
+                                    password=settings.postgres_password,
+                                    host=settings.host,
+                                    port=settings.port_db,
                                     cursor_factory=RealDictCursor)
         self.cur = self.con.cursor()
 
@@ -87,7 +77,7 @@ class TextFilter(BaseFilter):
 # not implemented
 class OwnerValidation(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        if message.chat.id == int(environ['OWNER_ID']):
+        if message.chat.id == settings.owner_id:
             return True
         else:
             return False

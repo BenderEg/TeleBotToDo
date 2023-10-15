@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from os import environ
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog.widgets.kbd import Calendar
@@ -7,7 +6,7 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.text import Const
 
 from models import FSMmodel, redis
-
+from settings import settings
 
 async def calendar_mode(callback: CallbackQuery, widget,
                         manager: DialogManager,
@@ -24,7 +23,7 @@ async def calendar_mode(callback: CallbackQuery, widget,
             'FSMmodel:add')
         await redis.set(
             f'date:{callback.message.chat.id}',
-            selected_date.strftime('%Y_%m_%d'), ex=environ["CACHE_exp"])
+            selected_date.strftime('%Y_%m_%d'), ex=settings.cache_exp)
         await callback.message.edit_text(
             text=f'Выбранная дата: <b>{selected_date.strftime("%Y_%m_%d")}</b>. \
 Введите задачу. Для выхода из режима ввода задачи нажмите /cancel.\n\
