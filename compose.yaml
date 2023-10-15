@@ -1,6 +1,6 @@
 services:
-    db:
-        container_name: db
+    db_to_do:
+        container_name: db_to_do
         image: postgres:latest
         env_file:
            - .env
@@ -16,8 +16,8 @@ services:
             retries: 5
         restart: always
 
-    red:
-        container_name: red
+    red_to_do:
+        container_name: red_to_do
         image: redis
         volumes:
             - to_do_state:/data
@@ -30,13 +30,13 @@ services:
             retries: 5
         restart: always
 
-    app:
+    to_do_list:
         container_name: to_do_list
         build:
             context: app
         depends_on:
-            - db
-            - red
+            - db_to_do
+            - red_to_do
         env_file:
             - .env
         networks:
@@ -48,8 +48,9 @@ services:
         build:
             context: cleaner
         depends_on:
-            - db
-            - red
+            - db_to_do
+            - red_to_do
+            - to_do_list
         env_file:
             - .env
         networks:
