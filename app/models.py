@@ -84,7 +84,7 @@ class OwnerValidation(BaseFilter):
 
 
 @dataclass
-class Task():
+class TaskSchema():
 
     id: UUID
     task: str

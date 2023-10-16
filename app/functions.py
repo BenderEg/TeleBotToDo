@@ -5,12 +5,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BotCommand
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, update
+from sqlalchemy import select, update, insert, desc
 from psycopg2.extras import RealDictCursor
 
 from db_models import User, Task
 from db_start import get_session
-from models import Task, DbConnect
+from models import TaskSchema, DbConnect
+
 
 async def set_main_menu(bot: Bot):
 
@@ -40,7 +41,7 @@ def set_schema(cur: RealDictCursor):
     cur.execute('SET search_path TO content,public')
 
 
-async def prepare_list_of_task(lst: list[Task]) -> str:
+async def prepare_list_of_task(lst: list[TaskSchema]) -> str:
 
     res = ''
     d = {}
@@ -65,27 +66,27 @@ async def prepare_list_of_task(lst: list[Task]) -> str:
     return res
 
 
-async def filter_active_task(lst: list[Task]) -> list:
+async def filter_active_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(lambda x: x.task_status == 'active', lst))
 
 
-async def filter_inactive_task(lst: list[Task]) -> list:
+async def filter_inactive_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(lambda x: x.task_status == 'inactive', lst))
 
 
-async def filter_current_task(lst: list[Task]) -> list:
+async def filter_current_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(lambda x: x.target_date >= datetime.now().date(), lst))
 
 
-async def filter_outdated_task(lst: list[Task]) -> list:
+async def filter_outdated_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(lambda x: x.target_date < datetime.now().date(), lst))
 
 
-async def filter_mark_done_task(lst: list[Task]) -> list:
+async def filter_mark_done_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(
         lambda x: (x.target_date - datetime.now().date()).days >= -2, lst)
@@ -94,56 +95,61 @@ async def filter_mark_done_task(lst: list[Task]) -> list:
 
 async def get_tasks(id: int,
                     order: str) -> None | list:
-    with DbConnect() as db:
-        db.cur.execute('''SELECT id, task,
-                       target_date, task_status
-                       FROM task
-                       WHERE user_id=%s
-                       ORDER BY target_date {order}'''.format(
-                           order=order),
-                       (id, ))
-        validated_data = [Task(**ele) for ele in db.cur.fetchall()]
-        return validated_data
+    gen = get_session()
+    session: AsyncSession = await anext(gen)
+    if order == 'DESC':
+        stmt = select(Task.id, Task.task,
+                      Task.target_date,
+                      Task.task_status).where(
+                      Task.user_id == id).order_by(desc(Task.target_date))
+    else:
+        stmt = select(Task.id, Task.task,
+                      Task.target_date,
+                      Task.task_status).where(
+                      Task.user_id == id).order_by(Task.target_date)
+
+    rows = await session.execute(stmt)
+    validated_data = [TaskSchema(*row) for row in rows]
+    await session.commit()
+    return validated_data
 
 
 async def start(id: int, name: str) -> None:
 
-    session: AsyncSession = await anext(get_session())
+    gen = get_session()
+    session: AsyncSession = await anext(gen)
     result = await session.get(User, id)
     if not result:
-        await session.add(User(name=name))
+        session.add(User(id=id, name=name))
     else:
         time_delta = datetime.now(tz=UTC) - result.modified
-        if time_delta.days >= 1:
-            result.name = name
-            result.modified = datetime.now(tz=UTC)
+        if time_delta.days > 1:
+            result.name = 'name'
+            result.modified = datetime.utcnow()
     await session.commit()
 
 
 async def add_task(id: int, task: str, date: str) -> None:
     date = datetime.strptime(date, '%Y_%m_%d')
-    with DbConnect() as db:
-        db.cur.execute('''INSERT into task
-                       (user_id, task, target_date)
-                       VALUES (%s, %s, %s)
-                       ON CONFLICT (user_id, task, target_date)
-                       DO NOTHING''', (id, task, date))
+    gen = get_session()
+    session: AsyncSession = await anext(gen)
+    session.add(Task(user_id=id, task=task, target_date=date))
+    await session.commit()
 
 
-async def update_mark_task(id: int, state: FSMContext) -> None:
+async def update_mark_task(state: FSMContext) -> None:
     data: dict = await state.get_data()
     if data and data['marked_tasks']:
-        with DbConnect() as db:
-            db.cur.executemany('''UPDATE task
-                               SET task_status = 'inactive'
-                               WHERE user_id = %s
-                               AND id = %s''', ((id, ele)
-                                                for ele in data[
-                                                    'marked_tasks']))
+        gen = get_session()
+        session: AsyncSession = await anext(gen)
+        items = [{'id': ele,
+                  'task_status': 'inactive'} for ele in data['marked_tasks']]
+        await session.execute(update(Task), items)
+        await session.commit()
     await state.clear()
 
 
-async def create_tasks_list_for_mark(lst: list[Task], state: FSMContext):
+async def create_tasks_list_for_mark(lst: list[TaskSchema], state: FSMContext):
     tasks_dict = {ele.id: [ele.target_date.strftime('%Y_%m_%d'), ele.task]
                   for ele in lst if ele.task_status == 'active'}
     await state.update_data(tasks_dict=tasks_dict, marked_tasks=[])

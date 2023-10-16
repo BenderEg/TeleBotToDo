@@ -91,6 +91,6 @@ async def process_buttons_press(callback: CallbackQuery, state: FSMContext):
 Перечень невыполненных задач пуст. Вы вышли из режима отметки выполненных задач.\n\
 Для продолжения работы выберите команду из меню.',
                         parse_mode='html')
-                await update_mark_task(callback.from_user.id, state)
+                await update_mark_task(state)
         except:
             pass
