@@ -1,14 +1,16 @@
-from datetime import datetime, UTC, date
-from typing import Literal
+from datetime import datetime, UTC
 
 from aiogram import Bot
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BotCommand
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, insert, update
 from psycopg2.extras import RealDictCursor
 
+from db_models import User, Task
+from db_start import get_session
 from models import Task, DbConnect
-
 
 async def set_main_menu(bot: Bot):
 
@@ -106,17 +108,16 @@ async def get_tasks(id: int,
 
 async def start(id: int, name: str) -> None:
 
-    with DbConnect() as db:
-        db.cur.execute('SELECT id, modified FROM users WHERE id=%s', (id,))
-        response = db.cur.fetchone()
-        if not response:
-            db.cur.execute('INSERT INTO users (id, name) VALUES (%s, %s)',
-                           (id, name))
-        else:
-            time_delta = datetime.now(tz=UTC) - response['modified']
-            if time_delta.days > 1:
-                db.cur.execute('''UPDATE users SET name = %s
-                               WHERE id = %s''', (name, id))
+    session: AsyncSession = await anext(get_session())
+    result = await session.get(User, id)
+    if not result:
+        await session.add(User(name=name))
+    else:
+        time_delta = datetime.now(tz=UTC) - result.modified
+        if time_delta.days >= 1:
+            result.name = name
+            result.modified = datetime.now(tz=UTC)
+    await session.commit()
 
 
 async def add_task(id: int, task: str, date: str) -> None:
