@@ -5,7 +5,7 @@ from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.filters import BaseFilter
 from aiogram.filters.state import State, StatesGroup
 from aiogram.types import Message
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from settings import settings
 
@@ -44,6 +44,8 @@ class OwnerValidation(BaseFilter):
 
 
 class TaskSchema(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     task: str

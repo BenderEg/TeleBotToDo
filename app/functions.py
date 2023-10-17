@@ -106,7 +106,7 @@ async def get_tasks(id: int,
                       Task.user_id == id).order_by(Task.target_date)
 
     rows = await session.execute(stmt)
-    validated_data = [TaskSchema.model_validate(row._asdict()) for row in rows]
+    validated_data = [TaskSchema.model_validate(row) for row in rows]
     await session.commit()
     return validated_data
 
@@ -122,7 +122,6 @@ async def start(id: int, name: str) -> None:
         time_delta = datetime.now(tz=UTC) - result.modified
         if time_delta.days > 1:
             result.name = name
-            result.modified = datetime.now(tz=UTC)
     await session.commit()
 
 
@@ -130,8 +129,9 @@ async def add_task(id: int, task: str, date: str) -> None:
     date = datetime.strptime(date, '%Y_%m_%d')
     gen = get_session()
     session: AsyncSession = await anext(gen)
-    session.add(Task(user_id=id, task=task, target_date=date))
-    await session.commit()
+    await Task.upsert_values(session, {'user_id': id,
+                                       'task': task,
+                                       'target_date': date})
 
 
 async def update_mark_task(state: FSMContext) -> None:

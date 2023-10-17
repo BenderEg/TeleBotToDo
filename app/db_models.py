@@ -3,8 +3,12 @@ import uuid
 from datetime import datetime, UTC
 
 from sqlalchemy import Column, String, Integer, \
-    Date, DateTime, ForeignKey
+    Date, DateTime, ForeignKey, TIMESTAMP, UniqueConstraint
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.expression import text
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects import postgresql
 
 from db_start import Base
 
@@ -19,8 +23,9 @@ class User(Base):
     created = Column(name='created', type_=DateTime(timezone=True),
                      default=datetime.now(tz=UTC),
                      nullable=False)
-    modified = Column(name='modified', type_=DateTime(timezone=True),
-                      default=datetime.now(tz=UTC),
+    modified = Column(name='modified', type_=TIMESTAMP(timezone=True),
+                      onupdate=func.now(),
+                      server_default=text('now()'),
                       nullable=False)
 
     def __init__(self, id: int, name: str) -> None:
@@ -31,6 +36,7 @@ class User(Base):
 class Task(Base):
 
     __tablename__ = 'task'
+    __table_args__ = (UniqueConstraint('user_id', 'task', 'target_date'), )
 
     id = Column(name='id', primary_key=True, nullable=False,
                 type_=UUID(as_uuid=True), default=uuid.uuid4,
@@ -42,9 +48,12 @@ class Task(Base):
                          default=datetime.today(),
                          nullable=False)
     created = Column(name='created', type_=DateTime(timezone=True),
-                     default=datetime.now(tz=UTC))
-    modified = Column(name='modified', type_=DateTime(timezone=True),
-                      default=datetime.now(tz=UTC))
+                     default=datetime.now(tz=UTC),
+                     nullable=False)
+    modified = Column(name='modified', type_=TIMESTAMP(timezone=True),
+                      onupdate=func.now(),
+                      server_default=text('now()'),
+                      nullable=False)
     task_status = Column(name='task_status',
                          type_=String, nullable=False,
                          default='active')
@@ -54,3 +63,11 @@ class Task(Base):
         self.user_id = user_id
         self.task = task
         self.target_date = target_date
+
+    @staticmethod
+    async def upsert_values(db: AsyncSession, values: dict):
+        stmt = postgresql.insert(Task).values(**values)
+        await db.execute(stmt.on_conflict_do_update(
+            constraint='task_user_id_task_target_date_key',
+            set_={'task_status': 'active'}))
+        await db.commit()

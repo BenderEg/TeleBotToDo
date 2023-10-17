@@ -3,7 +3,6 @@ import asyncio
 from aiogram import Bot, Dispatcher
 
 from db_start import create_database
-from db_models import User, Task
 from functions import set_main_menu
 from models import BOT_TOKEN, storage
 from routers import start, get_current, get_outdated, \
