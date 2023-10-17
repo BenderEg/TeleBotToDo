@@ -7,7 +7,6 @@ services:
         ports:
           - 5433:5432
         volumes:
-            - ./db/db_schema.sql:/docker-entrypoint-initdb.d/db.sql:ro
             - to_do_db:/var/lib/postgresql/data
         networks:
             - to_do

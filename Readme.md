@@ -1,23 +1,21 @@
-To work with telebot backend container type (from folder TeleBotAll/app/):
+This bot helps to be effective and don't forget important things to do.
 
-    docker build -t backbot:1 .
-    docker run --rm -d --name main --env-file=../.env --net=app back_bot:1
+Technology stack:
 
-    To enter container with bash type:
+1. Python;
+2. Aiogram3;
+3. SQLalchemy;
+4. Redis;
+5. Pydantic;
+6. Postgresql;
+7. Docker.
 
-        docker exec -it main bash
+It is possible to start bot in two modes:
 
+1. In development mode: in this case only Postgresql and Redis instances are containerised. App with telegram bot
+is started from IDE (docker compose -f compose-dev.yaml up -d).
+2. Production mode: for running on server two more containers are included. Main app and also cleaner, which is
+cron job for removing outdated task from Postgresql database (docker compose up -d).
 
-To start container with database type:
-
-    docker run --rm -d --name db -v test:/var/lib/postgresql/data --env-file=../.env -p 5433:5432 --net=app postgres
-
-    To enter container with psql type:
-
-        docker exec -it db psql --username sam --dbname to_do_list
-
-
-To work with API container type (from folder fast_api):
-
-    docker build -t fast_api:1 .
-    docker run --rm -d --name fa --env-file=../.env -p 80:80 --net=app fast_api:1
+To start create .envdev file for development mode or .env file for production mode (see .env_example for more information).
+Than create docker network to_do (bridge type).
