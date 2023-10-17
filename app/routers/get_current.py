@@ -4,7 +4,8 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message
 
 
-from functions import prepare_list_of_task, get_tasks, filter_current_task
+from functions import prepare_list_of_task, get_tasks, \
+    filter_current_task, message_paginator
 from models import FSMmodel
 
 router: Router = Router()
@@ -20,4 +21,4 @@ async def process_get_current_command(message: Message):
         await message.answer('На данный момент список актуальных задач пуст.')
     else:
         res = await prepare_list_of_task(tasks)
-        await message.answer(text=res, parse_mode='html')
+        await message_paginator(res, message)

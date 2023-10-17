@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from aiogram import Bot
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, insert, desc
 from psycopg2.extras import RealDictCursor
@@ -150,7 +150,7 @@ async def update_mark_task(state: FSMContext) -> None:
 
 
 async def create_tasks_list_for_mark(lst: list[TaskSchema], state: FSMContext):
-    tasks_dict = {ele.id: [ele.target_date.strftime('%Y_%m_%d'), ele.task]
+    tasks_dict = {str(ele.id): [ele.target_date.strftime('%Y_%m_%d'), ele.task]
                   for ele in lst if ele.task_status == 'active'}
     await state.update_data(tasks_dict=tasks_dict, marked_tasks=[])
     builder = await create_tasks_builder(tasks_dict)
@@ -165,3 +165,11 @@ async def create_tasks_builder(d: dict) -> InlineKeyboardBuilder:
                        callback_data=f"{key}")
     builder.adjust(1, 1)
     return builder
+
+
+async def message_paginator(text: str, message: Message) -> str:
+    if len(text) > 4000:
+        for i in range(0, len(text), 4000):
+            await message.answer(text=text[i:i+4000], parse_mode='html')
+    else:
+        await message.answer(text=text, parse_mode='html')
