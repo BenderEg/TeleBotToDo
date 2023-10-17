@@ -5,12 +5,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BotCommand, Message
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, insert, desc
-from psycopg2.extras import RealDictCursor
+from sqlalchemy import select, update, desc
 
 from db_models import User, Task
 from db_start import get_session
-from models import TaskSchema, DbConnect
+from models import TaskSchema
 
 
 async def set_main_menu(bot: Bot):
@@ -34,11 +33,6 @@ async def set_main_menu(bot: Bot):
                    description='Для старта работы'),
             ]
     await bot.set_my_commands(main_menu_commands)
-
-
-def set_schema(cur: RealDictCursor):
-    '''Set search path for easier table appeal'''
-    cur.execute('SET search_path TO content,public')
 
 
 async def prepare_list_of_task(lst: list[TaskSchema]) -> str:
@@ -78,18 +72,21 @@ async def filter_inactive_task(lst: list[TaskSchema]) -> list:
 
 async def filter_current_task(lst: list[TaskSchema]) -> list:
 
-    return list(filter(lambda x: x.target_date >= datetime.now().date(), lst))
+    return list(filter(lambda x: x.target_date.date() >= datetime.now().date(),
+                       lst))
 
 
 async def filter_outdated_task(lst: list[TaskSchema]) -> list:
 
-    return list(filter(lambda x: x.target_date < datetime.now().date(), lst))
+    return list(filter(lambda x: x.target_date.date() < datetime.now().date(),
+                       lst))
 
 
 async def filter_mark_done_task(lst: list[TaskSchema]) -> list:
 
     return list(filter(
-        lambda x: (x.target_date - datetime.now().date()).days >= -2, lst)
+        lambda x: (x.target_date.date() - datetime.now().date()).days >= -2,
+        lst)
         )
 
 
@@ -109,7 +106,7 @@ async def get_tasks(id: int,
                       Task.user_id == id).order_by(Task.target_date)
 
     rows = await session.execute(stmt)
-    validated_data = [TaskSchema(*row) for row in rows]
+    validated_data = [TaskSchema.model_validate(row._asdict()) for row in rows]
     await session.commit()
     return validated_data
 
@@ -124,8 +121,8 @@ async def start(id: int, name: str) -> None:
     else:
         time_delta = datetime.now(tz=UTC) - result.modified
         if time_delta.days > 1:
-            result.name = 'name'
-            result.modified = datetime.utcnow()
+            result.name = name
+            result.modified = datetime.now(tz=UTC)
     await session.commit()
 
 
@@ -160,9 +157,11 @@ async def create_tasks_list_for_mark(lst: list[TaskSchema], state: FSMContext):
 async def create_tasks_builder(d: dict) -> InlineKeyboardBuilder:
 
     builder = InlineKeyboardBuilder()
-    for key, value in d.items():
+    for i, (key, value) in enumerate(d.items(), 1):
         builder.button(text=f'{value[0]}: {value[1]}',
                        callback_data=f"{key}")
+        if i == 95:
+            break
     builder.adjust(1, 1)
     return builder
 

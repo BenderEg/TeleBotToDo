@@ -37,7 +37,7 @@ async def process_exit_add_mode_command(message: Message,
     await message.answer('Вы вышли из режима отметки выполненных задач.\n\
 Для добавления задачи нажмите /add.\n\
 Для просмотра актуальных задач нажмите /get_current.')
-    await update_mark_task(message.from_user.id, state)
+    await update_mark_task(state)
 
 
 @router.message(StateFilter(FSMmodel.mark_done),

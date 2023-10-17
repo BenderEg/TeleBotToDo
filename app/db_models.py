@@ -1,6 +1,6 @@
 import uuid
 
-from datetime import datetime
+from datetime import datetime, UTC
 
 from sqlalchemy import Column, String, Integer, \
     Date, DateTime, ForeignKey
@@ -17,10 +17,10 @@ class User(Base):
                 type_=Integer, unique=True)
     name = Column(name='name', type_=String(length=100), nullable=False)
     created = Column(name='created', type_=DateTime(timezone=True),
-                     default=datetime.utcnow(),
+                     default=datetime.now(tz=UTC),
                      nullable=False)
     modified = Column(name='modified', type_=DateTime(timezone=True),
-                      default=datetime.utcnow(),
+                      default=datetime.now(tz=UTC),
                       nullable=False)
 
     def __init__(self, id: int, name: str) -> None:
@@ -42,9 +42,9 @@ class Task(Base):
                          default=datetime.today(),
                          nullable=False)
     created = Column(name='created', type_=DateTime(timezone=True),
-                     default=datetime.utcnow())
+                     default=datetime.now(tz=UTC))
     modified = Column(name='modified', type_=DateTime(timezone=True),
-                      default=datetime.utcnow())
+                      default=datetime.now(tz=UTC))
     task_status = Column(name='task_status',
                          type_=String, nullable=False,
                          default='active')

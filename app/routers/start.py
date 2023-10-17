@@ -1,11 +1,9 @@
 from aiogram import Router
 from aiogram.filters import Command, StateFilter
-from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message
 
 from functions import start
-from models import FSMmodel, DbConnect, TextFilter
 from LEXICON import RU
 
 router: Router = Router()
