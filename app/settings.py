@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     redis_host: str
     redis_port: int
     redis_db: int
-    url: str
     cache_exp: int
     days: int
 
