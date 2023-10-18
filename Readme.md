@@ -4,7 +4,7 @@ Technology stack:
 
 1. Python;
 2. Aiogram3;
-3. SQLalchemy;
+3. SQLAlchemy;
 4. Redis;
 5. Pydantic;
 6. Postgresql;
