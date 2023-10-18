@@ -167,8 +167,16 @@ async def create_tasks_builder(d: dict) -> InlineKeyboardBuilder:
 
 
 async def message_paginator(text: str, message: Message) -> str:
-    if len(text) > 4000:
-        for i in range(0, len(text), 4000):
-            await message.answer(text=text[i:i+4000], parse_mode='html')
-    else:
-        await message.answer(text=text, parse_mode='html')
+    i = 0
+    while i < len(text):
+        current_text = text[i:i+4000]
+        text_length = len(current_text)
+        if text_length < 4000:
+            await message.answer(text=current_text, parse_mode='html')
+            break
+        else:
+            j = text_length - 1
+            while current_text[j] != '\n':
+                j -= 1
+            await message.answer(text=text[i:j], parse_mode='html')
+            i += j
