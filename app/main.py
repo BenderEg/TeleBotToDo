@@ -2,7 +2,6 @@ import asyncio
 
 from aiogram import Bot, Dispatcher
 
-from db_start import create_database
 from functions import set_main_menu
 from models import BOT_TOKEN, storage
 from routers import start, get_current, get_outdated, \
@@ -21,8 +20,6 @@ async def main() -> None:
     dp.include_router(calendar.router)
     dp.include_router(add_object.router)
     dp.include_router(unspecific.router)
-
-    await create_database()
 
     await set_main_menu(bot)
     await bot.delete_webhook(drop_pending_updates=True)

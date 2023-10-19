@@ -171,12 +171,15 @@ async def message_paginator(text: str, message: Message) -> str:
     while i < len(text):
         current_text = text[i:i+4000]
         text_length = len(current_text)
-        if text_length < 4000:
+        j = text_length - 1
+        if 0 < text_length < 4000:
             await message.answer(text=current_text, parse_mode='html')
             break
+        elif text_length == 0:
+            break
         else:
-            j = text_length - 1
             while current_text[j] != '\n':
                 j -= 1
-            await message.answer(text=text[i:j], parse_mode='html')
-            i += j
+            result = text[i:i+j+1]
+            await message.answer(text=result, parse_mode='html')
+            i += j+1
