@@ -19,6 +19,7 @@ cron job for removing outdated task from Postgresql database (docker compose up 
 
 To start create .envdev file for development mode or .env file for production mode (see .env_example for more information).
 Than create docker network to_do (bridge type).
+
 For develompent mode startup after starting conteiners:
 
 1. Create virtual environment and install all neccassary requirements;
