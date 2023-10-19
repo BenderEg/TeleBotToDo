@@ -1,17 +1,12 @@
 import asyncio
 
-from aiogram import Bot, Dispatcher
-
 from functions import set_main_menu
-from models import BOT_TOKEN, storage
+from models import dp, bot
 from routers import start, get_current, get_outdated, \
     mark_done, add_object, unspecific, calendar
 
 
 async def main() -> None:
-
-    bot: Bot = Bot(BOT_TOKEN)
-    dp: Dispatcher = Dispatcher(storage=storage)
 
     dp.include_router(start.router)
     dp.include_router(get_current.router)

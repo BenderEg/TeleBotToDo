@@ -9,7 +9,8 @@ from sqlalchemy import select, update, desc
 
 from db_models import User, Task
 from db_start import get_session
-from models import TaskSchema
+from models import TaskSchema, bot
+from settings import settings
 
 
 async def set_main_menu(bot: Bot):
@@ -118,6 +119,10 @@ async def start(id: int, name: str) -> None:
     result = await session.get(User, id)
     if not result:
         session.add(User(id=id, name=name))
+        await bot.send_message(
+            settings.owner_id,
+            text=f'Новый пользователь <b>{name}</b> присоединился к нам!',
+            parse_mode='html')
     else:
         time_delta = datetime.now(tz=UTC) - result.modified
         if time_delta.days > 1:

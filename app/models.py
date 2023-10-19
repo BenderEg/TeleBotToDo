@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.filters import BaseFilter
 from aiogram.filters.state import State, StatesGroup
@@ -17,6 +18,8 @@ redis: Redis = Redis(host=settings.redis_host,
 storage: RedisStorage = RedisStorage(redis=redis,
                                      key_builder=DefaultKeyBuilder(
                                          with_destiny=True))
+bot: Bot = Bot(BOT_TOKEN)
+dp: Dispatcher = Dispatcher(storage=storage)
 
 
 class FSMmodel(StatesGroup):
