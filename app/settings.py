@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     redis_db: int
     cache_exp: int
     days: int
+    echo: bool = True
 
 
 settings = Settings()
