@@ -26,6 +26,8 @@ async def set_main_menu(bot: Bot):
                    description='Добавить задачу'),
         BotCommand(command='/calendar',
                    description='Календарь и выбор даты'),
+        BotCommand(command='/weather',
+                   description='Для просмотра погоды'),
         BotCommand(command='/help',
                    description='Справка по работе бота'),
         BotCommand(command='/cancel',

@@ -3,12 +3,13 @@ import asyncio
 from functions import set_main_menu
 from models import dp, bot
 from routers import start, get_current, get_outdated, \
-    mark_done, add_object, unspecific, calendar
+    mark_done, add_object, unspecific, calendar, weather
 
 
 async def main() -> None:
 
     dp.include_router(start.router)
+    dp.include_router(weather.router)
     dp.include_router(get_current.router)
     dp.include_router(get_outdated.router)
     dp.include_router(mark_done.router)

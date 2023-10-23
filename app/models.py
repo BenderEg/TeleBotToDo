@@ -28,12 +28,28 @@ class FSMmodel(StatesGroup):
     add = State()
     calendar = State()
     mark_done = State()
+    weather = State()
 
 
 class TextFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         if message.text:
             return {'text': message.text}
+        return False
+
+
+class Coords(BaseModel):
+
+    latitude: float
+    longitude: float
+
+
+class GeoFilter(BaseFilter):
+    async def __call__(self, message: Message) -> Coords | bool:
+        if message.location:
+            coords = Coords(latitude=message.location.latitude,
+                            longitude=message.location.longitude)
+            return {'coords': coords}
         return False
 
 

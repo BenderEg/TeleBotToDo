@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     cache_exp: int
     days: int
     echo: bool = True
+    wapi_key: str
+    units: str = 'metric'
+    language: str = 'ru'
+    days_forecast: int = 7
 
 
 settings = Settings()
