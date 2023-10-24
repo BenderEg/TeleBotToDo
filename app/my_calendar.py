@@ -16,7 +16,7 @@ async def calendar_mode(callback: CallbackQuery, widget,
     if selected_date < datetime.now().date():
         await callback.message.edit_text(
             text=f'Выбранная дата <b>{selected_date.strftime("%Y_%m_%d")}</b> \
- менее текущей даты. Нажмите /add или /calendar для повторного выбора даты.',
+ менее текущей даты. Нажмите /calendar для повторного выбора даты.',
             parse_mode='html')
     else:
         # await redis.set(
@@ -41,3 +41,4 @@ calendar_window = Window(
 
 calendar_dialog = Dialog(calendar_window)
 add_dialog = Dialog(calendar_window)
+weather_dialog = Dialog(calendar_window)

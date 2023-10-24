@@ -29,6 +29,8 @@ class FSMmodel(StatesGroup):
     calendar = State()
     mark_done = State()
     weather = State()
+    location = State()
+    data_for_weather = State()
 
 
 class TextFilter(BaseFilter):

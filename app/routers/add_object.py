@@ -50,7 +50,9 @@ async def process_add_in_process_command(message: Message):
 
 
 @router.message(StateFilter(FSMmodel.add),
-                Command(commands='mark_done'))
+                Command(commands=['mark_done',
+                                  'get_current',
+                                  'get_outdated']))
 async def process_mark_done_command(message: Message):
     await message.answer('Вы в режиме создания задачи.\n\
 Для выхода из режима выберите команду /cancel.')

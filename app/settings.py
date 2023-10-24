@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     wapi_key: str
     units: str = 'metric'
     language: str = 'ru'
-    days_forecast: int = 7
+    points: int = 80
 
 
 settings = Settings()
