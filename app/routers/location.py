@@ -1,5 +1,3 @@
-from json import loads
-
 from aiogram import Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -9,13 +7,21 @@ from pydantic import ValidationError
 
 from models import FSMmodel, GeoFilter, TextFilter, Coords, redis
 from settings import settings
-from weather_models import get_current_weather, convert_response_to_model,\
-    CurrentData, send_current_weather, RequestError,\
-    create_modes_builder, Modes, get_locations_by_name, validate_locations,\
+from weather_models import RequestError,\
+    create_modes_builder, get_locations_by_name, validate_locations,\
     create_locations_builder, SearchError
 
 
 router: Router = Router()
+
+
+@router.message(Command(commands=["location"]),
+                StateFilter(default_state, FSMmodel.weather))
+async def process_weather_command(message: Message, state: FSMContext):
+
+    await state.set_state(FSMmodel.location)
+    await message.answer('Отправьте геолокацию или наименование \
+ближайшего населенного пункта.')
 
 
 @router.message(StateFilter(FSMmodel.location),
@@ -24,13 +30,12 @@ async def process_geo_object(message: Message,
                              state: FSMContext,
                              coords: Coords):
     try:
-        res = await send_current_weather(latitude=coords.latitude,
-                                         longitude=coords.longitude,
-                                         class_name=CurrentData)
-        await message.answer(res)
         await redis.set(f'coords:{message.chat.id}',
                         coords.model_dump_json(),
                         ex=settings.cache_exp)
+        await state.set_state(FSMmodel.weather)
+        await message.answer('Координаты успешно изменены. \
+Для отображение погоды нажмите /weather.')
     except RequestError as p:
         await message.answer(str(p))
     except ValidationError as p:

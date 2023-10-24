@@ -19,10 +19,6 @@ async def calendar_mode(callback: CallbackQuery, widget,
  менее текущей даты. Нажмите /calendar для повторного выбора даты.',
             parse_mode='html')
     else:
-        # await redis.set(
-        #    f'''fsm:{callback.message.chat.id}:{
-        #        callback.message.chat.id}:default:state''',
-        #    'FSMmodel:add')
         await redis.set(
             f'date:{callback.message.chat.id}',
             selected_date.strftime('%Y_%m_%d'), ex=settings.cache_exp)

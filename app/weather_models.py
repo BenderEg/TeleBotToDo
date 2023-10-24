@@ -1,4 +1,3 @@
-from abc import ABC
 from datetime import datetime, UTC, timedelta
 from enum import Enum
 from typing import Optional
@@ -15,11 +14,6 @@ class Modes(Enum):
     CURRENT_SHORT = 0
     CURRENT_LONG = 1
     FORECAST = 2
-
-
-class AbstractWeather(ABC, BaseModel):
-
-    pass
 
 
 class RequestError(Exception):
@@ -74,7 +68,7 @@ class City(BaseModel):
     timezone: int
 
 
-class CurrentData(AbstractWeather):
+class CurrentData(BaseModel):
 
     model_config = ConfigDict(extra='ignore')
 
@@ -122,7 +116,8 @@ class LocationByName(BaseModel):
 
 
 async def get_current_weather(latitude: float, longitude: float) -> Response:
-    response: Response = request('GET', f'''https://api.openweathermap.org/data/2.5/weather?\
+    response: Response = request(
+        'GET', f'''https://api.openweathermap.org/data/2.5/weather?\
 lat={latitude}&lon={longitude}&appid={settings.wapi_key}&lang\
 ={settings.language}&units={settings.units}''')
     if not response:
@@ -132,7 +127,8 @@ lat={latitude}&lon={longitude}&appid={settings.wapi_key}&lang\
 
 
 async def get_locations_by_name(name: str) -> Response:
-    response: Response = request('GET', f'''http://api.openweathermap.org/geo/1.0/direct?\
+    response: Response = request(
+        'GET', f'''http://api.openweathermap.org/geo/1.0/direct?\
 q={name}&limit={5}&appid={settings.wapi_key}''')
     if not response:
         raise RequestError('Ошибка подключения к сервесу погоды.\
@@ -149,7 +145,8 @@ async def validate_locations(response: Response) -> list:
 
 
 async def get_forecast(latitude: float, longitude: float) -> Response:
-    response: Response = request('GET', f'''https://api.openweathermap.org/data/2.5/forecast?\
+    response: Response = request(
+        'GET', f'''https://api.openweathermap.org/data/2.5/forecast?\
 lat={latitude}&lon={longitude}&appid={settings.wapi_key}&lang\
 ={settings.language}&units={settings.units}&cnt={settings.points}''')
     if not response:
@@ -168,7 +165,7 @@ async def validate_forecast(response: Response) -> ForecastData:
 
 async def convert_response_to_model(
           response: Response,
-          class_name: AbstractWeather) -> AbstractWeather:
+          class_name: CurrentData) -> CurrentData:
 
     weather_dict = response.json()
     return class_name(**weather_dict)
@@ -198,13 +195,12 @@ async def _prepare_current_output(obj: CurrentData,
 Описание: {description};
 Температура: {obj.main.temp} {chr(176)}С;
 Ощущается как: {obj.main.feels_like} {chr(176)}С;
-Влажность: {obj.main.humidity} %;'''
+Влажность: {obj.main.humidity} %;\n'''
         if obj.rain:
             res += f'Количество осадков: {obj.rain.get("1h")} мм;\n'
         elif obj.snow:
             res += f'Количество осадков: {obj.snow.get("1h")} мм;\n'
-        res += f'''
-Давление: {obj.main.pressure} мм;
+        res += f'''Давление: {obj.main.pressure} мм;
 Ветер: {obj.wind.speed} м/с;
 Восход: {_time_from_datetime(sunrise)};
 Закат: {_time_from_datetime(sunset)};
@@ -220,6 +216,16 @@ async def send_current_weather(latitude: float,
     data: CurrentData = await convert_response_to_model(
         response, class_name)
     res = await _prepare_current_output(data, mode)
+    return res
+
+
+async def send_forecast(latitude: float,
+                        longitude: float) -> str:
+
+    response = await get_forecast(latitude=latitude,
+                                  longitude=longitude)
+    forecast = await validate_forecast(response)
+    res = await _prepare_forecast_output(forecast)
     return res
 
 
@@ -239,7 +245,7 @@ def _filter_day_data(time: datetime) -> bool:
         return False
 
 
-async def prepare_forecast_output(obj: ForecastData) -> str:
+async def _prepare_forecast_output(obj: ForecastData) -> str:
 
     res = f'Местоположение: {obj.city.name} ({obj.city.country}).\n\n'
     data = list(filter(lambda x: _filter_day_data(
@@ -248,10 +254,13 @@ async def prepare_forecast_output(obj: ForecastData) -> str:
     starting_time = datetime.fromtimestamp(data[0].dt, tz=UTC) +\
         timedelta(seconds=obj.city.timezone)
     ref_day = starting_time.day
-    res += f'<b>Дата: {starting_time.strftime("%Y_%m_%d")}.</b>\n\n'
+    res += f'<b>Дата: {starting_time.strftime("%Y_%m_%d")}.</b>\n'
 
-    counter = cumulative_temp = cunmulative_humidity\
-        = cumulative_feels_like = 0
+    cumulative_temp = []
+    cumulative_feels_like = []
+    cumulative_rain = []
+    cumulative_snow = []
+    cumulative_humidity = []
     description = []
 
     for ele in data:
@@ -259,19 +268,54 @@ async def prepare_forecast_output(obj: ForecastData) -> str:
             timedelta(seconds=obj.city.timezone)
         cur_day = tm.day
         if cur_day != ref_day:
-            res += f'<b>Дата: {tm.strftime("%Y_%m_%d")}.</b>\n\n'
             ref_day = cur_day
-        description = ', '.join([ele.description for ele in ele.weather])
-        res += f'''Время: {tm.strftime("%H")}:00.
-Описание: {description};
-Температура: {ele.main.temp} {chr(176)}С;
-Ощущается как: {ele.main.feels_like} {chr(176)}С;\n'''
+            res = _refresh_lists(res, description, cumulative_temp,
+                                 cumulative_feels_like,
+                                 cumulative_rain,
+                                 cumulative_snow,
+                                 cumulative_humidity)
+            res += f'<b>Дата: {tm.strftime("%Y_%m_%d")}.</b>\n'
+        description.extend([val.description for val in ele.weather])
+        cumulative_temp.append(ele.main.temp)
+        cumulative_humidity.append(ele.main.humidity)
+        cumulative_feels_like.append(ele.main.feels_like)
         if ele.rain:
-            res += f'Количество осадков: {ele.rain.get("1h")} мм;\n'
+            cumulative_rain.append(ele.rain.get('3h'))
         elif ele.snow:
-            res += f'Количество осадков: {ele.snow.get("1h")} мм;\n'
-        res += f'Влажность: {ele.main.humidity} %.\n\n'
+            cumulative_snow.append(ele.snow.get('3h'))
+    res = _refresh_lists(res, description, cumulative_temp,
+                         cumulative_feels_like,
+                         cumulative_rain,
+                         cumulative_snow,
+                         cumulative_humidity)
+    return res
 
+
+def _refresh_lists(res: str, description: list, cumulative_temp: list,
+                   cumulative_feels_like: list, cumulative_rain: list,
+                   cumulative_snow: list, cumulative_humidity: list) -> str:
+
+    res += f'''
+Описание: {', '.join(list(set(description)))};
+Температура: {round(sum(cumulative_temp)/len(cumulative_temp), 1)} {chr(176)}С;
+Ощущается как: {round(
+    sum(cumulative_feels_like)/len(cumulative_feels_like), 1
+    )} {chr(176)}С;\n'''
+    if cumulative_rain:
+        res += f'''Количество осадков (дождь): {
+                round(sum(cumulative_rain)/len(cumulative_rain), 2)} мм;\n'''
+    if cumulative_snow:
+        res += f'''Количество осадков (снег): {
+                    round(sum(cumulative_snow)/len(cumulative_snow),2
+                          )} мм;\n'''
+    res += f'''Влажность: {int(
+                sum(cumulative_humidity)/len(cumulative_humidity))} %.\n\n'''
+    cumulative_temp = []
+    cumulative_feels_like = []
+    cumulative_rain = []
+    cumulative_snow = []
+    cumulative_humidity = []
+    description = []
     return res
 
 

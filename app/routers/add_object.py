@@ -60,15 +60,16 @@ async def process_mark_done_command(message: Message):
 
 @router.message(StateFilter(FSMmodel.add), TextFilter())
 async def process_text(message: Message, state: FSMContext,
-                       dialog_manager: DialogManager):
-    id, task = message.from_user.id, message.text
+                       dialog_manager: DialogManager,
+                       text: str):
+    id = message.from_user.id
     date = await redis.get(f'date:{id}')
     if not date:
         await process_add_object_command(message, dialog_manager, state)
     else:
-        await add_task(id, task, date)
+        await add_task(id, text, date)
         await message.answer(
             text=('Задача добавлена. \n\
-Для выхода из режима выберите команду /cancel или продолжайте вводить задачи.\n\
-Для смены даты нажмите /calendar.')
+Для выхода из режима выберите команду /cancel или \
+продолжайте вводить задачи.\nДля смены даты нажмите /calendar.')
         )

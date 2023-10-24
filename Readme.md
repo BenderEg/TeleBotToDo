@@ -23,6 +23,6 @@ Than create docker network to_do (bridge type).
 For develompent mode startup after starting conteiners:
 
 1. Create virtual environment and install all neccassary requirements;
-2. Make your current locaation in app folder;
+2. Make your current location in app folder;
 3. Run 'alembic upgrade head' for database tables creation;
 4. Run 'python main.py' for telegrambot startup.
