@@ -129,7 +129,7 @@ lat={latitude}&lon={longitude}&appid={settings.wapi_key}&lang\
 async def get_locations_by_name(name: str) -> Response:
     response: Response = request(
         'GET', f'''http://api.openweathermap.org/geo/1.0/direct?\
-q={name}&limit={5}&appid={settings.wapi_key}''')
+q={name}&limit={settings.locations_limit}&appid={settings.wapi_key}''')
     if not response:
         raise RequestError('Ошибка подключения к сервесу погоды.\
 Попробуйте позже.')

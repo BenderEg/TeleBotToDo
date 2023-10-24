@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     units: str = 'metric'
     language: str = 'ru'
     points: int = 80
+    locations_limit: int = 10
 
 
 settings = Settings()
