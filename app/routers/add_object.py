@@ -24,7 +24,6 @@ async def process_add_object_command(message: Message,
     if not date:
         await dialog_manager.start(FSMmodel.calendar,
                                    mode=StartMode.RESET_STACK)
-        await state.set_state(FSMmodel.add)
     else:
         await message.answer(text=f'Вы в режиме ввода задачи.\n\
 Выбранная дата: <b>{date}</b>, введите задачу. \

@@ -23,4 +23,4 @@ async def process_calendar_command(message: Message,
                                    dialog_manager: DialogManager,
                                    state: FSMContext):
     await dialog_manager.start(FSMmodel.calendar, mode=StartMode.RESET_STACK)
-    # await state.set_state(FSMmodel.add)
+    await state.set_state(FSMmodel.add)
